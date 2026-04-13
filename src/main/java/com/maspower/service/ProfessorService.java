@@ -1,0 +1,43 @@
+package com.maspower.service;
+
+import com.maspower.model.Professor;
+import com.maspower.repository.ProfessorRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+
+@Service
+@RequiredArgsConstructor
+public class ProfessorService {
+
+    private final ProfessorRepository professorRepository;
+
+    public List<Professor> findAll() {
+        return professorRepository.findAll();
+    }
+
+    public Professor findById(Long id) {
+        return professorRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Professor not found with id: " + id));
+    }
+
+    public Professor save(Professor professor) {
+        return professorRepository.save(professor);
+    }
+
+    public Professor update(Long id, Professor professor) {
+        Professor existing = findById(id);
+        existing.setName(professor.getName());
+        existing.setDni(professor.getDni());
+        existing.setHiringYear(professor.getHiringYear());
+        existing.setActive(professor.isActive());
+        existing.setImageUrl(professor.getImageUrl());
+        return professorRepository.save(existing);
+    }
+
+    public void delete(Long id) {
+        findById(id);
+        professorRepository.deleteById(id);
+    }
+}
