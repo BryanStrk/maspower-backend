@@ -7,17 +7,22 @@ import com.maspower.model.User;
 import com.maspower.repository.ActivityRepository;
 import com.maspower.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class ActivityService {
 
     private final ActivityRepository activityRepository;
     private final UserRepository userRepository;
+    private final CloudinaryService cloudinaryService;
 
     public List<Activity> findAll() {
         return activityRepository.findAll();
@@ -38,18 +43,35 @@ public class ActivityService {
 
     public Activity update(Long id, Activity activity) {
         Activity existing = findById(id);
+
+        // Si la imagen ha cambiado, borrar la anterior de Cloudinary
+        String oldImageUrl = existing.getImageUrl();
+        String newImageUrl = activity.getImageUrl();
+
+        if (oldImageUrl != null && !oldImageUrl.isBlank() && !oldImageUrl.equals(newImageUrl)) {
+            deleteImageSafely(oldImageUrl);
+        }
+
         existing.setTitle(activity.getTitle());
         existing.setDescription(activity.getDescription());
         existing.setPrice(activity.getPrice());
         existing.setDate(activity.getDate());
-        existing.setImageUrl(activity.getImageUrl());
+        existing.setImageUrl(newImageUrl);
         existing.setProfessor(activity.getProfessor());
+
         return activityRepository.save(existing);
     }
 
+    @Transactional
     public void delete(Long id) {
-        findById(id);
-        activityRepository.deleteById(id);
+        Activity activity = findById(id);
+
+        // Borrar imagen de Cloudinary antes de eliminar la entidad
+        if (activity.getImageUrl() != null && !activity.getImageUrl().isBlank()) {
+            deleteImageSafely(activity.getImageUrl());
+        }
+
+        activityRepository.delete(activity);
     }
 
     public Activity enrollUser(Long activityId, Long userId) {
@@ -90,4 +112,16 @@ public class ActivityService {
         return activityRepository.save(activity);
     }
 
+    /**
+     * Borra una imagen de Cloudinary sin propagar el error.
+     * Si falla, se registra en logs pero no se interrumpe la operación principal.
+     */
+    private void deleteImageSafely(String imageUrl) {
+        try {
+            cloudinaryService.deleteImage(imageUrl);
+            log.info("Imagen eliminada de Cloudinary: {}", imageUrl);
+        } catch (IOException e) {
+            log.error("Error eliminando imagen de Cloudinary: {}", imageUrl, e);
+        }
+    }
 }
