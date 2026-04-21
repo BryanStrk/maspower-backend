@@ -43,18 +43,18 @@ public class ActivityService {
     }
 
     public Activity save(ActivityRequestDTO dto) {
-        Professor professor = findProfessorById(dto.getProfessorId());
+        Professor professor = findProfessorById(dto.professorId());
         Activity activity = ActivityMapper.toEntity(dto, professor);
         return activityRepository.save(activity);
     }
 
     public Activity update(Long id, ActivityRequestDTO dto) {
         Activity existing = findById(id);
-        Professor professor = findProfessorById(dto.getProfessorId());
+        Professor professor = findProfessorById(dto.professorId());
 
         // Gestión de imagen: si cambió, borrar la anterior de Cloudinary
         String oldImageUrl = existing.getImageUrl();
-        String newImageUrl = dto.getImageUrl();
+        String newImageUrl = dto.imageUrl();
 
         if (oldImageUrl != null && !oldImageUrl.isBlank() && !oldImageUrl.equals(newImageUrl)) {
             deleteImageSafely(oldImageUrl);
