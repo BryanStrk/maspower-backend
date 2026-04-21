@@ -1,10 +1,14 @@
 package com.maspower.service;
 
+import com.maspower.dto.ActivityMapper;
+import com.maspower.dto.ActivityRequestDTO;
 import com.maspower.exception.BusinessException;
 import com.maspower.exception.ResourceNotFoundException;
 import com.maspower.model.Activity;
+import com.maspower.model.Professor;
 import com.maspower.model.User;
 import com.maspower.repository.ActivityRepository;
+import com.maspower.repository.ProfessorRepository;
 import com.maspower.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -22,6 +26,7 @@ public class ActivityService {
 
     private final ActivityRepository activityRepository;
     private final UserRepository userRepository;
+    private final ProfessorRepository professorRepository;
     private final CloudinaryService cloudinaryService;
 
     public List<Activity> findAll() {
@@ -37,28 +42,25 @@ public class ActivityService {
                 .orElseThrow(() -> new ResourceNotFoundException("Activity not found with id: " + id));
     }
 
-    public Activity save(Activity activity) {
+    public Activity save(ActivityRequestDTO dto) {
+        Professor professor = findProfessorById(dto.getProfessorId());
+        Activity activity = ActivityMapper.toEntity(dto, professor);
         return activityRepository.save(activity);
     }
 
-    public Activity update(Long id, Activity activity) {
+    public Activity update(Long id, ActivityRequestDTO dto) {
         Activity existing = findById(id);
+        Professor professor = findProfessorById(dto.getProfessorId());
 
-        // Si la imagen ha cambiado, borrar la anterior de Cloudinary
+        // Gestión de imagen: si cambió, borrar la anterior de Cloudinary
         String oldImageUrl = existing.getImageUrl();
-        String newImageUrl = activity.getImageUrl();
+        String newImageUrl = dto.getImageUrl();
 
         if (oldImageUrl != null && !oldImageUrl.isBlank() && !oldImageUrl.equals(newImageUrl)) {
             deleteImageSafely(oldImageUrl);
         }
 
-        existing.setTitle(activity.getTitle());
-        existing.setDescription(activity.getDescription());
-        existing.setPrice(activity.getPrice());
-        existing.setDate(activity.getDate());
-        existing.setImageUrl(newImageUrl);
-        existing.setProfessor(activity.getProfessor());
-
+        ActivityMapper.updateEntity(existing, dto, professor);
         return activityRepository.save(existing);
     }
 
@@ -66,7 +68,6 @@ public class ActivityService {
     public void delete(Long id) {
         Activity activity = findById(id);
 
-        // Borrar imagen de Cloudinary antes de eliminar la entidad
         if (activity.getImageUrl() != null && !activity.getImageUrl().isBlank()) {
             deleteImageSafely(activity.getImageUrl());
         }
@@ -79,17 +80,14 @@ public class ActivityService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
 
-        // Criterio: usuario debe estar activo
         if (!user.isActive()) {
             throw new BusinessException("User is not active");
         }
 
-        // Criterio: no puede inscribirse 2 veces
         if (activity.getUsers().contains(user)) {
             throw new BusinessException("User already enrolled in this activity");
         }
 
-        // Criterio: máximo 3 actividades futuras
         long futureCount = activityRepository.findByDateAfter(LocalDateTime.now())
                 .stream()
                 .filter(a -> a.getUsers().contains(user))
@@ -112,10 +110,11 @@ public class ActivityService {
         return activityRepository.save(activity);
     }
 
-    /**
-     * Borra una imagen de Cloudinary sin propagar el error.
-     * Si falla, se registra en logs pero no se interrumpe la operación principal.
-     */
+    private Professor findProfessorById(Long id) {
+        return professorRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Professor not found with id: " + id));
+    }
+
     private void deleteImageSafely(String imageUrl) {
         try {
             cloudinaryService.deleteImage(imageUrl);
