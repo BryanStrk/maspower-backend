@@ -1,6 +1,8 @@
 package com.maspower.controller;
 
-import com.maspower.model.Professor;
+import com.maspower.dto.ProfessorMapper;
+import com.maspower.dto.ProfessorRequestDTO;
+import com.maspower.dto.ProfessorResponseDTO;
 import com.maspower.service.ProfessorService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -18,23 +20,27 @@ public class ProfessorController {
     private final ProfessorService professorService;
 
     @GetMapping
-    public ResponseEntity<List<Professor>> getAll() {
-        return ResponseEntity.ok(professorService.findAll());
+    public ResponseEntity<List<ProfessorResponseDTO>> getAll() {
+        return ResponseEntity.ok(professorService.findAll().stream()
+                .map(ProfessorMapper::toDTO)
+                .toList());
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Professor> getById(@PathVariable Long id) {
-        return ResponseEntity.ok(professorService.findById(id));
+    public ResponseEntity<ProfessorResponseDTO> getById(@PathVariable Long id) {
+        return ResponseEntity.ok(ProfessorMapper.toDTO(professorService.findById(id)));
     }
 
     @PostMapping
-    public ResponseEntity<Professor> create(@Valid @RequestBody Professor professor) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(professorService.save(professor));
+    public ResponseEntity<ProfessorResponseDTO> create(@Valid @RequestBody ProfessorRequestDTO dto) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ProfessorMapper.toDTO(professorService.save(dto)));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Professor> update(@PathVariable Long id, @Valid @RequestBody Professor professor) {
-        return ResponseEntity.ok(professorService.update(id, professor));
+    public ResponseEntity<ProfessorResponseDTO> update(@PathVariable Long id,
+                                                       @Valid @RequestBody ProfessorRequestDTO dto) {
+        return ResponseEntity.ok(ProfessorMapper.toDTO(professorService.update(id, dto)));
     }
 
     @DeleteMapping("/{id}")
