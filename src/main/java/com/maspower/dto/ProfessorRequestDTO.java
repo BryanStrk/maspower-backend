@@ -2,21 +2,18 @@ package com.maspower.dto;
 
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
-import lombok.Data;
 
-@Data
-public class ProfessorRequestDTO {
+public record ProfessorRequestDTO(
+        @NotBlank(message = "Name is required")
+        String name,
 
-    @NotBlank(message = "Name is required")
-    private String name;
+        @NotBlank(message = "Dni is required")
+        String dni,
 
-    @NotBlank(message = "Dni is required")
-    private String dni;
+        @Min(value = 2000, message = "Hiring year must be 2000 or later")
+        int hiringYear,
 
-    @Min(value = 2000, message = "Hiring year must be 2000 or later")
-    private int hiringYear;
+        boolean isActive,
 
-    private boolean isActive;
-
-    private String imageUrl;
-}
+        String imageUrl
+) {}
