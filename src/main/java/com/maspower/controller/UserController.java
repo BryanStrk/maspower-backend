@@ -1,6 +1,8 @@
 package com.maspower.controller;
 
-import com.maspower.model.User;
+import com.maspower.dto.UserMapper;
+import com.maspower.dto.UserRequestDTO;
+import com.maspower.dto.UserResponseDTO;
 import com.maspower.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -18,23 +20,27 @@ public class UserController {
     private final UserService userService;
 
     @GetMapping
-    public ResponseEntity<List<User>> getAll() {
-        return ResponseEntity.ok(userService.findAll());
+    public ResponseEntity<List<UserResponseDTO>> getAll() {
+        return ResponseEntity.ok(userService.findAll().stream()
+                .map(UserMapper::toDTO)
+                .toList());
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<User> getById(@PathVariable Long id) {
-        return ResponseEntity.ok(userService.findById(id));
+    public ResponseEntity<UserResponseDTO> getById(@PathVariable Long id) {
+        return ResponseEntity.ok(UserMapper.toDTO(userService.findById(id)));
     }
 
     @PostMapping
-    public ResponseEntity<User> create(@Valid @RequestBody User user) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(userService.save(user));
+    public ResponseEntity<UserResponseDTO> create(@Valid @RequestBody UserRequestDTO dto) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(UserMapper.toDTO(userService.save(dto)));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<User> update(@PathVariable Long id, @Valid @RequestBody User user) {
-        return ResponseEntity.ok(userService.update(id, user));
+    public ResponseEntity<UserResponseDTO> update(@PathVariable Long id,
+                                                  @Valid @RequestBody UserRequestDTO dto) {
+        return ResponseEntity.ok(UserMapper.toDTO(userService.update(id, dto)));
     }
 
     @DeleteMapping("/{id}")
