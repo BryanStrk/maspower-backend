@@ -9,10 +9,10 @@
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
     <groupId>com.maspower</groupId>
-    <artifactId>maspower-backend</artifactId>
+    <artifactId>apexfitness-backend</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <name>maspower-backend</name>
-    <description>maspower-backend</description>
+    <description>apexfitness-backend</description>
     <url/>
     <licenses>
         <license/>
